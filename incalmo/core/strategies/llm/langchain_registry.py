@@ -270,6 +270,19 @@ _DEEPSEEK_DIRECT = {
     "deepseek-r1": "deepseek-reasoner",
 }
 
+# name -> upstream NCSA Lumen gateway model id.
+# Lumen is the OpenAI-compatible institutional gateway (U. Illinois / NCSA) that
+# pentestgpt-legacy uses as its `lumen` provider: one key (GATEWAY_API_KEY) plus a
+# base URL (GATEWAY_BASE_URL, default https://lumen.ncsa.illinois.edu/v1) fan out
+# to many open models. Added here so Incalmo can drive the SAME backend PentestGPT
+# runs, for attacker-trace comparison. Model ids mirror pentestgpt_legacy/llm/registry.py.
+_LUMEN_DIRECT = {
+    "glm-5.3": "glm-5.3",
+    "deepseek-v4.1-flash": "deepseek-v4.1-flash",
+    "qwen3.8-flash": "qwen3.8-flash",
+    "nemotron-3-super-120b-a12b": "nemotron-3-super-120b-a12b",
+}
+
 # ── TypeSafe AI "System One" / Jev ───────────────────────────────────────────
 # Jev is not a text LLM: it returns a *choice* from a pre-declared option set
 # (https://docs.typesafe.ai/primitives/choice), so it is not built through a
@@ -322,6 +335,36 @@ def _build_deployments() -> Dict[str, dict]:
             "base_url": None,
             "credential_ref": "DEEPSEEK_API_KEY",
             "params": {"temperature": 0.7},
+        }
+
+    # NCSA Lumen gateway (OpenAI-compatible): GATEWAY_API_KEY + GATEWAY_BASE_URL,
+    # mirroring pentestgpt_legacy's `lumen` provider. No sampling params are set
+    # (several of these are reasoning models); the gateway applies its own defaults,
+    # matching the litellm_proxy deployments below.
+    for name, model in _LUMEN_DIRECT.items():
+        d[name] = {
+            "provider": "openai_compatible",
+            "model": model,
+            "base_url": os.environ.get(
+                "GATEWAY_BASE_URL", "https://lumen.ncsa.illinois.edu/v1"
+            ),
+            "credential_ref": "GATEWAY_API_KEY",
+            "params": {},
+        }
+
+    # AWS Bedrock via its OpenAI-compatible endpoint (bedrock-runtime .../openai/v1),
+    # authed with an Amazon Bedrock API key (Bearer). Used when Lumen is exhausted.
+    # Region/model come from the environment so this stays region/model-agnostic:
+    #   BEDROCK_BASE_URL e.g. https://bedrock-runtime.us-east-1.amazonaws.com/openai/v1
+    #   BEDROCK_MODEL    e.g. us.anthropic.claude-haiku-4-5-20251001-v1:0 | openai.gpt-oss-120b
+    _bedrock_base = os.environ.get("BEDROCK_BASE_URL")
+    if _bedrock_base:
+        d["bedrock"] = {
+            "provider": "openai_compatible",
+            "model": os.environ.get("BEDROCK_MODEL", "us.anthropic.claude-haiku-4-5-20251001-v1:0"),
+            "base_url": _bedrock_base,
+            "credential_ref": "BEDROCK_API_KEY",
+            "params": {},
         }
 
     for name, model in _JEV_DIRECT.items():

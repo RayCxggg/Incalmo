@@ -38,4 +38,8 @@ class EnvironmentInitializer:
                     Subnet("192.168.204.0/24"),
                 ]
             )
+        elif self.attacker_config.environment == Environment.CHAIN_2HOSTS.value:
+            # Chain2Hosts: the attacker's foothold sits on the target chain's entry
+            # subnet (192.168.200.0/24); the Kali attacker host is on 192.168.202.0/24.
+            return Network([Subnet("192.168.200.0/24")])
         return Network([Subnet("192.168.200.0/24")])

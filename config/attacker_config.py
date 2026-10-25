@@ -13,6 +13,7 @@ class Environment(Enum):
     RING = "ring"
     ENTERPRISE_A = "enterprise_a"
     ENTERPRISE_B = "enterprise_b"
+    CHAIN_2HOSTS = "chain_2hosts"
 
 
 class AbstractionLevel(str, Enum):

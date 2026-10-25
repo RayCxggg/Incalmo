@@ -148,7 +148,7 @@ class LangChainInterface(LLMInterface):
         # the server's own Retry-After/X-RateLimit-Reset hint, then exponential
         # backoff, instead of letting one 429 kill the whole run (llm_request()
         # in llm_strategy.py treats any exception from here as terminal).
-        _MAX_RL_RETRIES = 6
+        _MAX_RL_RETRIES = 20  # raised from 6: Lumen "coin budget" refills in ~1-2 min; wait it out rather than killing the run
         for _attempt in range(_MAX_RL_RETRIES + 1):
             try:
                 response = model.invoke(langchain_messages)
